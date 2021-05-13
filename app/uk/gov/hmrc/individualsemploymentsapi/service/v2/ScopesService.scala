@@ -31,9 +31,16 @@ class ScopesService @Inject()(configuration: Configuration) {
       .map(s => s.fields)
       .getOrElse(List())
 
+  private[service] def getScopeFilterKeys(scope: String): List[String] =
+    apiConfig
+      .getScope(scope)
+      .map(s => s.filters)
+      .getOrElse(List())
+
   def getScopeItems(scope: String): List[String] =
     getScopeItemsKeys(scope)
-      .flatMap(fieldId => apiConfig.endpoints.flatMap(e => e.fields.get(fieldId)))
+      .flatMap(fieldId =>
+        apiConfig.endpoints.flatMap(e => e.fields.get(fieldId)))
 
   def getEndpointFieldKeys(endpointKey: String): Iterable[String] =
     apiConfig
@@ -47,24 +54,55 @@ class ScopesService @Inject()(configuration: Configuration) {
       .flatMap(value => keys.map(value.get))
       .flatten
 
+  def getFilters(keys: Iterable[String]): Iterable[String] =
+    apiConfig.endpoints
+      .map(e => e.filters)
+      .flatMap(value => keys.map(value.get))
+      .flatten
+
   def getAllScopes: List[String] = apiConfig.scopes.map(_.name).sorted
 
-  def getValidItemsFor(scopes: Iterable[String], endpoint: String): Iterable[String] = {
+  def getValidItemsFor(scopes: Iterable[String],
+                       endpoint: String): Iterable[String] = {
     val uniqueDataFields = scopes.flatMap(getScopeItemsKeys).toList.distinct
     val endpointDataItems = getEndpointFieldKeys(endpoint).toSet
-    val authorizedDataItemsOnEndpoint = uniqueDataFields.filter(endpointDataItems.contains)
+    val authorizedDataItemsOnEndpoint =
+      uniqueDataFields.filter(endpointDataItems.contains)
     getFieldNames(authorizedDataItemsOnEndpoint)
   }
 
-  def getValidItemsFor(scopes: Iterable[String], endpoints: List[String]): Set[String] = {
+  def getValidFilters(scopes: Iterable[String],
+                      endpoints: List[String]): Iterable[String] = {
     val uniqueDataFields = scopes.flatMap(getScopeItemsKeys).toList.distinct
-    val endpointDataItems = endpoints.flatMap(e => getEndpointFieldKeys(e).toSet)
-    val authorizedDataItemsOnEndpoint = uniqueDataFields.filter(endpointDataItems.contains)
+    val endpointDataItems =
+      endpoints.flatMap(e => getEndpointFieldKeys(e).toSet)
+    val authorizedDataItemsOnEndpoint =
+      uniqueDataFields.filter(endpointDataItems.contains)
+    getFilters(authorizedDataItemsOnEndpoint)
+  }
+
+  def getValidItemsFor(scopes: Iterable[String],
+                       endpoints: List[String]): Set[String] = {
+    val uniqueDataFields = scopes.flatMap(getScopeItemsKeys).toList.distinct
+    val endpointDataItems =
+      endpoints.flatMap(e => getEndpointFieldKeys(e).toSet)
+    val authorizedDataItemsOnEndpoint =
+      uniqueDataFields.filter(endpointDataItems.contains)
     getFieldNames(authorizedDataItemsOnEndpoint).toSet
   }
 
-  def getValidFieldsForCacheKey(scopes: List[String]): String =
-    scopes.flatMap(getScopeItemsKeys).distinct.reduce(_ + _)
+  def getValidFieldsForCacheKey(scopes: Iterable[String],
+                                endpoints: List[String]): String = {
+    val uniqueDataFields = scopes.flatMap(getScopeItemsKeys).toList.distinct
+    val endpointDataItems =
+      endpoints.flatMap(e => getEndpointFieldKeys(e).toSet)
+    val keys = uniqueDataFields.filter(endpointDataItems.contains)
+
+    keys.nonEmpty match {
+      case true => keys.reduce(_ + _)
+      case _    => ""
+    }
+  }
 
   def getAccessibleEndpoints(scopes: Iterable[String]): Iterable[String] = {
     val scopeKeys = scopes.flatMap(s => getScopeItemsKeys(s)).toSeq

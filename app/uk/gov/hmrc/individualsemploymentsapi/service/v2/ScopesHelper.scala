@@ -30,16 +30,22 @@ class ScopesHelper @Inject()(scopesService: ScopesService) {
     * @param endpoint The endpoint for which to construct the query string
     * @return A google fields-style query string with the fields determined by the provided endpoint and scopes
     */
-  def getQueryStringFor(scopes: Iterable[String], endpoint: String): String =
-    PathTree(scopesService.getValidItemsFor(scopes, endpoint)).toString
+  def getQueryStringFor(scopes: Iterable[String], endpoint: String): String = {
+    getQueryStringFor(scopes, List(endpoint))
+  }
 
   /**
     * @param scopes The list of scopes associated with the user
     * @param endpoints The endpoints for which to construct the query string
     * @return A google fields-style query string with the fields determined by the provided endpoint(s) and scopes
     */
-  def getQueryStringFor(scopes: Iterable[String], endpoints: List[String]): String =
-    PathTree(scopesService.getValidItemsFor(scopes, endpoints)).toString
+  def getQueryStringFor(scopes: Iterable[String],
+                        endpoints: List[String]): String = {
+    val filters = scopesService.getValidFilters(scopes, endpoints)
+    s"${PathTree(scopesService.getValidItemsFor(scopes, endpoints)).toString}${if (filters.nonEmpty)
+      s"&filter=${filters.mkString("&filter=")}"
+    else ""}"
+  }
 
   /**
     * @param endpoint The endpoint that the user has called
@@ -47,10 +53,13 @@ class ScopesHelper @Inject()(scopesService: ScopesService) {
     * @param data The data to be returned from the endpoint
     * @return A HalResource containing data, and a list of valid links determined by the provided scopes
     */
-  def getHalResponse(endpoint: String, scopes: List[String], data: Option[JsValue]): HalResource = {
+  def getHalResponse(endpoint: String,
+                     scopes: List[String],
+                     data: Option[JsValue]): HalResource = {
     val hateoasLinks = scopesService
       .getEndpoints(scopes)
-      .map(link => HalLink(rel = link.name, href = link.link, name = Some(link.title)))
+      .map(link =>
+        HalLink(rel = link.name, href = link.link, name = Some(link.title)))
       .toList ++
       Seq(HalLink("self", scopesService.getEndpointLink(endpoint).get))
 
@@ -63,9 +72,9 @@ class ScopesHelper @Inject()(scopesService: ScopesService) {
         .getEndpoints(scopes)
         .map(
           endpoint =>
-            HalLink(
-              rel = endpoint.name,
-              href = endpoint.link.replaceAllLiterally("<matchId>", s"$matchId"),
+            HalLink(rel = endpoint.name,
+              href = endpoint.link.replaceAllLiterally("<matchId>",
+                s"$matchId"),
               title = Some(endpoint.title)))
         .toSeq)
 }
