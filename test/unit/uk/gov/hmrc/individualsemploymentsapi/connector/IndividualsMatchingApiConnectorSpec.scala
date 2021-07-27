@@ -34,7 +34,7 @@ import unit.uk.gov.hmrc.individualsemploymentsapi.util.SpecBase
 class IndividualsMatchingApiConnectorSpec extends SpecBase with BeforeAndAfterEach {
 
   val stubPort = sys.env.getOrElse("WIREMOCK", "11121").toInt
-  val stubHost = "localhost"
+  val stubHost = "127.0.0.1"
   val wireMockServer = new WireMockServer(wireMockConfig().port(stubPort))
 
   trait Fixture {

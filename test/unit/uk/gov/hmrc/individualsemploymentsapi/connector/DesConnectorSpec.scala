@@ -35,7 +35,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class DesConnectorSpec extends SpecBase with BeforeAndAfterEach with MockitoSugar {
   val stubPort = sys.env.getOrElse("WIREMOCK", "11122").toInt
-  val stubHost = "localhost"
+  val stubHost = "127.0.0.1"
   val wireMockServer = new WireMockServer(wireMockConfig().port(stubPort))
   val desAuthorizationToken = "DES_TOKEN"
   val desEnvironment = "DES_ENVIRONMENT"

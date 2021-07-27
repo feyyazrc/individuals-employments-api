@@ -42,7 +42,7 @@ class IfConnectorSpec extends SpecBase with BeforeAndAfterEach with Intervals wi
 
   val matchId = "80a6bb14-d888-436e-a541-4000674c60aa"
   val stubPort = sys.env.getOrElse("WIREMOCK", "11122").toInt
-  val stubHost = "localhost"
+  val stubHost = "127.0.0.1"
   val wireMockServer = new WireMockServer(wireMockConfig().port(stubPort))
   val integrationFrameworkAuthorizationToken = "IF_TOKEN"
   val integrationFrameworkEnvironment = "IF_ENVIRONMENT"
